@@ -12,6 +12,36 @@ among the collected data:
 
 topics are processed in parallel, using python asyncio stack
 
+## usage
+
+```
+Usage: main.py [options]
+
+Options:
+  -h, --help            show this help message and exit
+  -f OUTPUT_FILE_NAME, --output_file_name=OUTPUT_FILE_NAME
+  -e REGEX_TOPIC_NAME, --regex_topic_name=REGEX_TOPIC_NAME
+  -s BOOTSTRAP_SERVERS, --bootstrap_servers=BOOTSTRAP_SERVERS
+  -t TOPIC, --topic=TOPIC
+```
+
+The -t and -s options can be arrays separated by commas.
+
+Options -t and -e can't be used together.
+
+If the -t option is empty, all topics in the kafka except '__consumer_offsets' will be used
+
+Logs are written in log.log.
+
+## example of usage
+
+```
+python3.6 src/main.py -s server1:9092,server2:9092,server3:9092 -t topic1,topic2 -f results.txt
+
+python3.6 src/main.py -s server1:9092,server2:9092,server3:9092 -e topic.+ -f results.txt
+
+python3.6 src/main.py -s server1:9092,server2:9092,server3:9092 -f results.txt
+```
 
 ## example of run
  
