@@ -6,7 +6,9 @@ import asyncio
 from optparse import OptionParser
 from aiokafka import AIOKafkaConsumer, TopicPartition
 from tqdm import tqdm
-
+import sys
+from datetime import date
+import json
 
 async def get_all_topics(kafka_servers):
     try:
@@ -60,9 +62,15 @@ async def close_consumer(consumer):
 
 async def get_next_message_data(consumer):
     msg = await consumer.getone()
-    recivied = datetime.fromtimestamp(msg.timestamp / 1000.)
+    if not msg.timestamp:
+        try:
+            recivied_date = datetime.fromtimestamp(json.loads(msg.value.decode('utf-8'))['createdAt'])
+        except: 
+            recivied_date = date(1900, 1, 1)
+    else:
+        recivied = datetime.fromtimestamp(msg.timestamp / 1000.)
+        recivied_date = recivied.date()
     size = len(msg.value)
-    recivied_date = recivied.date()
     return recivied_date, size, msg.offset
 
 
@@ -84,7 +92,7 @@ async def fetch_topic_data(kafka_server, topic, index):
     errors_msgs_count = 0
     readed_msgs_count = 0
 
-    with tqdm(total=last_offset - first_offset, desc=f'{topic}', position=index) as pbar:
+    with tqdm(total=last_offset - first_offset, desc=f'{topic}', position=index, file=sys.stdout) as pbar:
         try:
             while True:
                 try:
