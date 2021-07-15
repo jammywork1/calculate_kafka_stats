@@ -5,10 +5,13 @@ import numpy as np
 import asyncio
 from optparse import OptionParser
 from aiokafka import AIOKafkaConsumer, TopicPartition
+from kafka.errors import ConnectionError
 from tqdm import tqdm
 import sys
 from datetime import date
 import json
+from uuid import uuid4
+
 
 async def get_all_topics(kafka_servers):
     try:
@@ -26,7 +29,7 @@ async def open_consumer(kafka_server, topic):
     consumer = AIOKafkaConsumer(
         topic, loop=loop,
         bootstrap_servers=kafka_server,
-        group_id='python_kafka_size_calc')
+        group_id='python_kafka_size_calc_'+str(uuid4()))
     await consumer.start()
     return consumer
 
@@ -102,6 +105,9 @@ async def fetch_topic_data(kafka_server, topic, index):
                     readed_msgs_count += 1
                     if offset >= last_offset - 1:
                         break
+                except ConnectionError:
+                    logging.error(f'topic {topic} fail read message. {repr(e)}')
+                    break
                 except Exception as e:
                     errors_msgs_count += 1
                     logging.error(f'topic {topic} fail read message. {repr(e)}')
@@ -154,7 +160,7 @@ async def is_topic_empty(kafka_server, topic):
     consumer = await open_consumer(kafka_server, topic)
     try:
         first_offset, last_offset = await get_offsets_scope_of_topic_and_set_to_start(consumer, topic)
-        if not last_offset:
+        if not last_offset or first_offset == last_offset:
             logging.error(f'topic `{topic} is empty`')
             return True
         return False
@@ -191,7 +197,7 @@ async def main(args):
     with open(args.output_file_name, 'w') as writer:
         for index, topic in enumerate(sorted(topics)):
             tasks.append(calculate_topic(args.bootstrap_servers, topic, index, writer))
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks, return_exceptions=True)
         print('\n' * len(topics))
 
 
