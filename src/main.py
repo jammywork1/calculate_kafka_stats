@@ -5,7 +5,7 @@ import numpy as np
 import asyncio
 from optparse import OptionParser
 from aiokafka import AIOKafkaConsumer, TopicPartition
-from kafka.errors import ConnectionError
+from kafka.errors import ConnectionError, KafkaError
 from tqdm import tqdm
 import sys
 from datetime import date
@@ -105,7 +105,7 @@ async def fetch_topic_data(kafka_server, topic, index):
                     readed_msgs_count += 1
                     if offset >= last_offset - 1:
                         break
-                except ConnectionError:
+                except KafkaError:
                     logging.error(f'topic {topic} fail read message. {repr(e)}')
                     break
                 except Exception as e:
